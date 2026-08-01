@@ -62,7 +62,7 @@ def process_ai_sort(tracks, user_prompt):
         raise Exception("Gemini API anahtarı eksik. Lütfen .env dosyanıza geçerli bir GEMINI_API_KEY ekleyin.")
         
     # Eski modeller kullanımdan kaldırıldığı için mevcut en güncel modeli kullanıyoruz.
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     # Şarkıları string olarak hazırla
     track_list_str = ""
@@ -122,7 +122,7 @@ def process_ai_discovery(sp, user_prompt):
     if not user_prompt:
         return False, "Lütfen yapay zeka için bir şarkı ismi, tür veya duygu girin."
         
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
 The user is asking for music recommendations based on this prompt: "{user_prompt}"
