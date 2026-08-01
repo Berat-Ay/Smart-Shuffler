@@ -13,10 +13,10 @@ except ImportError:
     LANGDETECT_AVAILABLE = False
 
 try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
 except ImportError:
-    GENAI_AVAILABLE = False
+    OPENAI_AVAILABLE = False
 
 load_dotenv()
 
@@ -27,10 +27,15 @@ app.config['SESSION_COOKIE_NAME'] = 'spotify-login-session'
 CLIENT_ID = os.getenv('SPOTIPY_CLIENT_ID')
 CLIENT_SECRET = os.getenv('SPOTIPY_CLIENT_SECRET')
 REDIRECT_URI = os.getenv('SPOTIPY_REDIRECT_URI')
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+NVIDIA_API_KEY = os.getenv('NVIDIA_API_KEY')
 
-if GENAI_AVAILABLE and GEMINI_API_KEY and GEMINI_API_KEY != 'buraya_google_gemini_api_anahtarini_yapistiracaksiniz':
-    genai.configure(api_key=GEMINI_API_KEY)
+if OPENAI_AVAILABLE and NVIDIA_API_KEY and NVIDIA_API_KEY != 'buraya_nvidia_api_anahtarini_yapistiracaksiniz':
+    ai_client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=NVIDIA_API_KEY
+    )
+else:
+    ai_client = None
 
 # Gerekli Kapsamlar (Kitaplık okuma, cihazları görme ve oynatmayı kontrol etme)
 SCOPE = "user-library-read user-modify-playback-state user-read-playback-state"
@@ -56,13 +61,10 @@ def detect_language_safe(text):
         return "unknown"
 
 def process_ai_sort(tracks, user_prompt):
-    if not GENAI_AVAILABLE:
-        raise Exception("Google Generative AI kütüphanesi eksik. Lütfen 'pip install google-generativeai' komutunu çalıştırın.")
-    if not GEMINI_API_KEY or GEMINI_API_KEY == 'buraya_google_gemini_api_anahtarini_yapistiracaksiniz':
-        raise Exception("Gemini API anahtarı eksik. Lütfen .env dosyanıza geçerli bir GEMINI_API_KEY ekleyin.")
-        
-    # Eski modeller kullanımdan kaldırıldığı için mevcut en güncel modeli kullanıyoruz.
-    model = genai.GenerativeModel('gemini-3.5-flash')
+    if not OPENAI_AVAILABLE:
+        raise Exception("OpenAI kütüphanesi eksik. Lütfen 'pip install openai' komutunu çalıştırın.")
+    if not ai_client:
+        raise Exception("NVIDIA API anahtarı eksik. Lütfen .env dosyanıza geçerli bir NVIDIA_API_KEY ekleyin.")
     
     # Şarkıları string olarak hazırla
     track_list_str = ""
@@ -95,13 +97,15 @@ Songs:
 {track_list_str}
 """
     try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
+        completion = ai_client.chat.completions.create(
+            model="meta/llama-3.3-70b-instruct",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
         )
-        scores_dict = json.loads(response.text)
+        response_text = completion.choices[0].message.content
+        scores_dict = json.loads(response_text)
     except Exception as e:
-        print(f"AI Parse/API Error: {str(e)}\nRaw Response: {response.text if 'response' in locals() else 'None'}")
+        print(f"AI Parse/API Error: {str(e)}")
         raise Exception(f"Yapay zeka hatası: {str(e)}")
         
     # Python tarafında puanlara göre şarkıları sıralıyoruz.
@@ -114,37 +118,39 @@ Songs:
     return sorted_items
 
 def process_ai_discovery(sp, user_prompt):
-    if not GENAI_AVAILABLE:
-        raise Exception("Google Generative AI kütüphanesi eksik. Lütfen 'pip install google-generativeai' komutunu çalıştırın.")
-    if not GEMINI_API_KEY or GEMINI_API_KEY == 'buraya_google_gemini_api_anahtarini_yapistiracaksiniz':
-        raise Exception("Gemini API anahtarı eksik. Lütfen .env dosyanıza geçerli bir GEMINI_API_KEY ekleyin.")
+    if not OPENAI_AVAILABLE:
+        raise Exception("OpenAI kütüphanesi eksik. Lütfen 'pip install openai' komutunu çalıştırın.")
+    if not ai_client:
+        raise Exception("NVIDIA API anahtarı eksik. Lütfen .env dosyanıza geçerli bir NVIDIA_API_KEY ekleyin.")
         
     if not user_prompt:
         return False, "Lütfen yapay zeka için bir şarkı ismi, tür veya duygu girin."
         
-    model = genai.GenerativeModel('gemini-3.5-flash')
-    
     prompt = f"""
 The user is asking for music recommendations based on this prompt: "{user_prompt}"
 
 Your task is to recommend exactly 15 distinct songs that perfectly match the user's request. Do NOT just list songs the user might already know, try to find gems that fit the mood/genre/artists mentioned.
-You MUST return ONLY a valid JSON array of objects. Each object must have "title" and "artist" keys.
-Do not include any explanations, markdown formatting (like ```json), or extra text.
+You MUST return a JSON object containing a single key "songs" which is an array of objects. Each object must have "title" and "artist" keys.
+Do not include any explanations or markdown formatting outside the JSON object.
 
 Example format:
-[
-  {{"title": "Bohemian Rhapsody", "artist": "Queen"}},
-  {{"title": "Hotel California", "artist": "Eagles"}}
-]
+{{
+  "songs": [
+    {{"title": "Bohemian Rhapsody", "artist": "Queen"}},
+    {{"title": "Hotel California", "artist": "Eagles"}}
+  ]
+}}
 """
     try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"response_mime_type": "application/json"}
+        completion = ai_client.chat.completions.create(
+            model="meta/llama-3.3-70b-instruct",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
         )
-        recommended_songs = json.loads(response.text)
+        response_text = completion.choices[0].message.content
+        recommended_songs = json.loads(response_text).get("songs", [])
     except Exception as e:
-        print(f"AI Parse/API Error: {str(e)}\nRaw Response: {response.text if 'response' in locals() else 'None'}")
+        print(f"AI Parse/API Error: {str(e)}")
         raise Exception(f"Yapay zeka öneri oluşturamadı: {str(e)}")
 
     final_uris = []
