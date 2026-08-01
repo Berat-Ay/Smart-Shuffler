@@ -61,8 +61,8 @@ def process_ai_sort(tracks, user_prompt):
     if not GEMINI_API_KEY or GEMINI_API_KEY == 'buraya_google_gemini_api_anahtarini_yapistiracaksiniz':
         raise Exception("Gemini API anahtarı eksik. Lütfen .env dosyanıza geçerli bir GEMINI_API_KEY ekleyin.")
         
-    # Eski modeller kullanımdan kaldırıldığı için mevcut en güncel modeli (gemini-flash-latest) kullanıyoruz.
-    model = genai.GenerativeModel('gemini-flash-latest')
+    # Eski modeller kullanımdan kaldırıldığı için mevcut en güncel modeli kullanıyoruz.
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     # Şarkıları string olarak hazırla
     track_list_str = ""
@@ -95,19 +95,11 @@ Songs:
 {track_list_str}
 """
     try:
-        response = model.generate_content(prompt)
-        response_text = response.text.strip()
-        
-        # Markdown etiketlerini temizle
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-        response_text = response_text.strip()
-        
-        scores_dict = json.loads(response_text)
+        response = model.generate_content(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+        scores_dict = json.loads(response.text)
     except Exception as e:
         print(f"AI Parse/API Error: {str(e)}\nRaw Response: {response.text if 'response' in locals() else 'None'}")
         raise Exception(f"Yapay zeka hatası: {str(e)}")
@@ -130,7 +122,7 @@ def process_ai_discovery(sp, user_prompt):
     if not user_prompt:
         return False, "Lütfen yapay zeka için bir şarkı ismi, tür veya duygu girin."
         
-    model = genai.GenerativeModel('gemini-flash-latest')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     prompt = f"""
 The user is asking for music recommendations based on this prompt: "{user_prompt}"
@@ -146,18 +138,11 @@ Example format:
 ]
 """
     try:
-        response = model.generate_content(prompt)
-        response_text = response.text.strip()
-        
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-        response_text = response_text.strip()
-        
-        recommended_songs = json.loads(response_text)
+        response = model.generate_content(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+        recommended_songs = json.loads(response.text)
     except Exception as e:
         print(f"AI Parse/API Error: {str(e)}\nRaw Response: {response.text if 'response' in locals() else 'None'}")
         raise Exception(f"Yapay zeka öneri oluşturamadı: {str(e)}")
@@ -204,8 +189,23 @@ Example format:
     if not active_device_id:
         return False, "Aktif bir Spotify cihazı bulunamadı. Önce telefon veya PC'de Spotify uygulamasını açıp bir şarkı oynatın."
 
-    sp.start_playback(device_id=active_device_id, uris=final_uris)
-        
+    if not final_uris:
+        return False, "Oynatılacak şarkı bulunamadı."
+
+    try:
+        sp.start_playback(device_id=active_device_id, uris=final_uris[:100])
+    except spotipy.exceptions.SpotifyException as e:
+        error_msg = str(e).upper()
+        if "PREMIUM_REQUIRED" in error_msg:
+            return False, "Bu işlem için Spotify Premium hesabı gereklidir."
+        elif "NO_ACTIVE_DEVICE" in error_msg:
+             return False, "Aktif cihaz bulunamadı. Lütfen Spotify'ı açıp bir şarkı çalın."
+        elif "RESTRICTED" in error_msg:
+            return False, "Seçili cihazda oynatma kısıtlanmış."
+        else:
+            print(f"Spotify Playback Error: {str(e)}")
+            return False, "Spotify Oynatma Hatası: Cihazınızı kontrol edin veya Premium olduğunuzdan emin olun."
+
     return True, f"Yapay zeka {found_count} yeni şarkı keşfetti ve çalmaya başladı!"
 
 
@@ -322,8 +322,23 @@ def process_smart_shuffle(sp, mode='artist', priority_lang='none', user_prompt='
     if not active_device_id:
         return False, "Aktif bir Spotify cihazı bulunamadı. Önce telefon veya PC'de Spotify uygulamasını açıp bir şarkı oynatın."
 
+    if not final_uris:
+        return False, "Karıştırılacak şarkı bulunamadı."
+
     # Spotify Web API start_playback parametresinde maksimum 100 URI kabul eder.
-    sp.start_playback(device_id=active_device_id, uris=final_uris[:100])
+    try:
+        sp.start_playback(device_id=active_device_id, uris=final_uris[:100])
+    except spotipy.exceptions.SpotifyException as e:
+        error_msg = str(e).upper()
+        if "PREMIUM_REQUIRED" in error_msg:
+            return False, "Bu işlem için Spotify Premium hesabı gereklidir."
+        elif "NO_ACTIVE_DEVICE" in error_msg:
+             return False, "Aktif cihaz bulunamadı. Lütfen Spotify'ı açıp bir şarkı çalın."
+        elif "RESTRICTED" in error_msg:
+            return False, "Seçili cihazda oynatma kısıtlanmış."
+        else:
+            print(f"Spotify Playback Error: {str(e)}")
+            return False, "Spotify Oynatma Hatası: Cihazınızı kontrol edin veya Premium olduğunuzdan emin olun."
         
     return True, msg
 
