@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Karıştırıcı</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --spotify-green: #1DB954;
+            --spotify-green-hover: #1ed760;
+            --bg-color: #0F0F13;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #FFFFFF;
+            --text-secondary: #A0A0A5;
+            --accent-purple: #8b4cf6;
+            --accent-purple-hover: #9b5cf6;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(29, 185, 84, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(139, 76, 246, 0.15), transparent 25%);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            background: linear-gradient(90deg, var(--spotify-green), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            margin-bottom: 30px;
+            padding: 5px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .tab-btn.active {
+            background: var(--glass-bg);
+            color: var(--text-main);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid var(--glass-border);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInTab 0.4s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInTab {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid var(--glass-border);
+            padding: 16px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background-color: var(--spotify-green);
+            border: none;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--spotify-green-hover);
+        }
+
+        .btn-ai {
+            background: linear-gradient(135deg, var(--spotify-green), var(--accent-purple));
+            border: none;
+        }
+
+        .btn-ai:hover {
+            background: linear-gradient(135deg, var(--spotify-green-hover), var(--accent-purple-hover));
+        }
+
+        .input-group {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .input-group p.hint {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-align: left;
+        }
+
+        select, input[type="text"] {
+            padding: 14px;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid var(--glass-border);
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--spotify-green);
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        #status {
+            margin-top: 25px;
+            font-weight: 500;
+            min-height: 24px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+            transition: all 0.3s;
+        }
+        
+        #status.visible {
+            display: block;
+            animation: fadeIn 0.4s;
+        }
+
+        #status.success {
+            background-color: rgba(29, 185, 84, 0.1);
+            color: var(--spotify-green);
+            border: 1px solid rgba(29, 185, 84, 0.2);
+        }
+
+        #status.error {
+            background-color: rgba(255, 68, 68, 0.1);
+            color: #FF4444;
+            border: 1px solid rgba(255, 68, 68, 0.2);
+        }
+        
+        #status.loading {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Loader */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 25px 20px;
+                border-radius: 16px;
+            }
+            h1 {
+                font-size: 26px;
+            }
+            p {
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+            .tab-btn {
+                padding: 10px;
+                font-size: 12px;
+            }
+            .btn {
+                padding: 14px;
+                font-size: 14px;
+            }
+            .input-group {
+                padding: 15px;
+            }
+            select, input[type="text"] {
+                padding: 12px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Smart Shuffler</h1>
+        <p>Müzik deneyimini yapay zeka ile baştan yarat.</p>
+        
+        <!-- Sekmeler -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('library')">Listemi Düzenle</button>
+            <button class="tab-btn" onclick="switchTab('discover')">✨ Yeni Keşfet</button>
+        </div>
+
+        <!-- Sekme 1: Liste Düzenleme (Mevcut Fonksiyonlar) -->
+        <div id="tab-library" class="tab-content active">
+            <div class="controls">
+                <button class="btn" onclick="startShuffle('artist')">
+                    🎤 Sanatçıya Göre Karıştır
+                </button>
+                
+                <div class="input-group">
+                    <p class="hint">Dillere göre kümele ve öncelik ver:</p>
+                    <select id="priority_lang">
+                        <option value="none">Öncelikli Dil Seçin (Farketmez)</option>
+                        <option value="tr">Önce Türkçe Başlasın</option>
+                        <option value="en">Önce İngilizce Başlasın</option>
+                        <option value="ja">Önce Japonca Başlasın</option>
+                        <option value="ko">Önce Korece Başlasın</option>
+                    </select>
+                    <button class="btn" onclick="startShuffle('lang_artist')">🌍 Dile & Sanatçıya Göre</button>
+                </div>
+                
+                <button class="btn" onclick="startShuffle('decade')">
+                    ⏳ Zaman Yolculuğu (On Yıllar)
+                </button>
+                
+                <div class="input-group" style="border-color: rgba(139, 76, 246, 0.3);">
+                    <p class="hint">Beğenilen şarkılarını yapay zeka senin için sıralasın:</p>
+                    <input type="text" id="ai_prompt" placeholder="Örn: Önce enerjik, sonra yavaş...">
+                    <button class="btn btn-ai" onclick="startShuffle('ai_sort')">🤖 Listemi AI ile Sırala</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sekme 2: Yeni Şarkı Keşfi (Yeni Fonksiyon) -->
+        <div id="tab-discover" class="tab-content">
+            <div class="controls">
+                <div class="input-group" style="border-color: rgba(29, 185, 84, 0.3);">
+                    <p class="hint">Tarz, duygu veya şarkı isimleri girerek yapay zekanın senin için yepeni şarkılar bulmasını sağla:</p>
+                    <input type="text" id="discover_prompt" placeholder="Örn: Hızlı rock, 90lar pop veya 'Bohemian Rhapsody' tarzı...">
+                    <button class="btn btn-primary" onclick="startShuffle('ai_discover')" style="margin-top: 10px;">
+                        <span class="spinner" id="discover-spinner"></span>
+                        🚀 Yeni Şarkılar Keşfet & Çal
+                    </button>
+                </div>
+                <p style="font-size: 13px; margin-top: 15px; color: var(--text-secondary); line-height: 1.4;">
+                    Yapay zeka verdiğin komuta uygun 15 şarkı bulup aktif cihazında sıraya ekleyecek.
+                </p>
+            </div>
+        </div>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (tabId === 'library') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-library').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-discover').classList.add('active');
+            }
+            
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = '';
+            statusDiv.style.display = 'none';
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = message;
+            statusDiv.className = `visible ${type}`;
+        }
+
+        function startShuffle(mode) {
+            let url = `/api/shuffle-and-play?mode=${mode}`;
+            const spinner = document.getElementById('discover-spinner');
+            
+            if (mode === 'lang_artist') {
+                const priorityLang = document.getElementById('priority_lang').value;
+                url += `&priority_lang=${priorityLang}`;
+                showStatus("Şarkılar analiz ediliyor...", "loading");
+            } else if (mode === 'ai_sort') {
+                const userPrompt = document.getElementById('ai_prompt').value;
+                if (!userPrompt.trim()) {
+                    showStatus("Lütfen Yapay Zeka için bir istek (prompt) yazın.", "error");
+                    return;
+                }
+                url += `&prompt=${encodeURIComponent(userPrompt)}`;
+                showStatus("Yapay zeka listeni analiz edip sıralıyor (15-30sn)...", "loading");
+            } else if (mode === 'ai_discover') {
+                const discoverPrompt = document.getElementById('discover_prompt').value;
+                if (!discoverPrompt.trim()) {
+                    showStatus("Lütfen keşfetmek istediğin tarzı veya duyguyu yazın.", "error");
+                    return;
+                }
+                url += `&prompt=${encodeURIComponent(discoverPrompt)}`;
+                showStatus("Yapay zeka tüm dünyadan yeni şarkılar arıyor (15-30sn)...", "loading");
+                spinner.style.display = 'inline-block';
+            } else {
+                showStatus("Şarkılar analiz ediliyor...", "loading");
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    spinner.style.display = 'none';
+                    if(data.success) {
+                        showStatus("🎵 " + data.message, "success");
+                    } else {
+                        showStatus("⚠️ " + data.message, "error");
+                        
+                        if (data.redirect) {
+                            setTimeout(() => {
+                                window.location.href = data.redirect;
+                            }, 2000);
+                        }
+                    }
+                })
+                .catch(err => {
+                    spinner.style.display = 'none';
+                    showStatus("Sunucuya bağlanılamadı.", "error");
+                });
+        }
+    </script>
+</body>
+</html>
